@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Civciv AI 5.0</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#17191f;color:#fff;font-family:Arial,sans-serif;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+.sidebar{width:245px;background:#111319;padding:16px;display:flex;flex-direction:column;gap:12px;border-right:1px solid #292c35}
+.logo{font-size:23px;font-weight:bold;color:#ffd45c;padding:10px 4px}
+button{border:0;border-radius:9px;padding:11px;background:#292d38;color:white;cursor:pointer;font-size:14px}
+button:hover{background:#3a4050}
+.newchat{background:#e6b944;color:#17191f;font-weight:bold}
+.nav{display:grid;gap:8px}
+.history-title{color:#8d94a5;font-size:12px;margin-top:12px}
+.history{overflow:auto;display:flex;flex-direction:column;gap:6px}
+.history button{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile{margin-top:auto;background:#20232c;padding:12px;border-radius:10px;font-size:13px;color:#c6c9d2}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{height:60px;border-bottom:1px solid #292c35;display:flex;align-items:center;padding:0 22px;justify-content:space-between}
+.topbar strong{color:#ffd45c}
+.status{font-size:12px;color:#8ed7a0}
+.messages{flex:1;overflow:auto;padding:24px max(18px,calc((100% - 850px)/2));display:flex;flex-direction:column;gap:18px}
+.welcome{text-align:center;margin:auto;max-width:520px}
+.chick{font-size:65px}
+.welcome h1{color:#ffd45c}
+.welcome p{color:#aeb3c0;line-height:1.6}
+.msg{display:flex;gap:10px;align-items:flex-start;max-width:850px;width:100%;margin:auto}
+.msg.user{flex-direction:row-reverse}
+.avatar{width:34px;height:34px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;background:#303542}
+.bubble{background:#242833;padding:13px 16px;border-radius:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;max-width:85%}
+.user .bubble{background:#3b465e}
+.composer{padding:14px 20px 20px;border-top:1px solid #292c35}
+.input-wrap{max-width:850px;margin:auto;display:flex;gap:10px;background:#242833;padding:8px;border-radius:13px}
+.input-wrap input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:white;padding:10px;font-size:15px}
+.send{background:#e6b944;color:#17191f;font-weight:bold;min-width:75px}
+.hint{text-align:center;color:#777e8e;font-size:11px;margin-top:9px}
+.panel{display:none;flex:1;overflow:auto;padding:25px}
+.panel.active{display:block}
+.chat-area.hidden{display:none}
+.card{background:#222630;border:1px solid #343946;border-radius:13px;padding:18px;margin:12px 0;max-width:700px}
+.card h3{color:#ffd45c}
+.answer-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.answer-buttons button{text-align:left}
+.score{color:#ffd45c;font-weight:bold}
+@media(max-width:650px){
+.sidebar{width:65px;padding:8px}
+.logo{font-size:0}.logo:first-letter{font-size:25px}
+.sidebar .nav button,.sidebar .history-title,.sidebar .history,.profile{font-size:0;padding:9px 3px;text-align:center}
+.sidebar .nav button{font-size:18px}
+.topbar{padding:0 12px}
+.messages{padding:15px 10px}
+.composer{padding:10px}
+.answer-buttons{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo"> Civciv AI</div>
+<button class="newchat" onclick="newChat()">＋ Yeni Sohbet</button>
+<div class="nav">
+<button onclick="showChat()"> Sohbet</button>
+<button onclick="showArena()"> Civciv Arena</button>
+</div>
+<div class="history-title">SOHBET GEÇMİŞİ</div>
+<div class="history" id="history"></div>
+<div class="profile">
+<div> Seviye: <b id="level">1</b></div>
+<div> Puan: <b id="points">0</b></div>
+</div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+<strong id="pageTitle">💬 Civciv AI 5.0</strong>
+<span class="status">● Yerel yapay zekâ</span>
+</header>
+
+<section class="chat-area" id="chatArea">
+<div class="messages" id="messages">
+<div class="welcome" id="welcome">
+<div class="chick">🐥</div>
+<h1>Merhaba! Ben Civciv AI.</h1>
+<p>Yerel yapay zekâ destekli sohbet arkadaşınım. Bana istediğin soruyu sorabilirsin!</p>
+</div>
+</div>
+<div class="composer">
+<div class="input-wrap">
+<input id="userInput" placeholder="Civciv'e bir şey sor..." autocomplete="off">
+<button class="send" id="sendButton" onclick="sendMessage()">Gönder</button>
+</div>
+<div class="hint">Civciv AI 5.0 · Yerel yapay zekâ · Sohbetlerin bu bilgisayarda saklanır</div>
+</div>
+</section>
+
+<section class="panel" id="arena">
+<h2> Civciv Arena</h2>
+<p>Bilgini test et, puan kazan ve seviye atla!</p>
+<div class="card">
+<div class="score" id="arenaScore">Puan: 0</div>
+<h3 id="question">Hazır mısın?</h3>
+<div class="answer-buttons" id="answers">
+<button onclick="startArena()">Oyuna Başla</button>
+</div>
+<p id="feedback"></p>
+</div>
+</section>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const STORAGE="civciv50_chats";
+let chats=JSON.parse(localStorage.getItem(STORAGE)||"[]");
+let currentChat=[];
+let answered=true;
+let questionIndex=0;
+let arenaPoints=0;
+
+const questions=[
+{q:"Türkiye'nin başkenti neresidir?",a:["İstanbul","Ankara","İzmir","Bursa"],c:1},
+{q:"Güneş hangi yönden doğar?",a:["Batı","Kuzey","Doğu","Güney"],c:2},
+{q:"Dünyanın en büyük okyanusu hangisidir?",a:["Atlas","Hint","Arktik","Pasifik"],c:3},
+{q:"Bir yılda kaç ay vardır?",a:["10","11","12","13"],c:2},
+{q:"Su kaç derecede donar?",a:["0°C","10°C","50°C","100°C"],c:0},
+{q:"En büyük gezegen hangisidir?",a:["Mars","Jüpiter","Dünya","Venüs"],c:1},
+{q:"Türkiye hangi kıtalarda toprak sahibidir?",a:["Asya ve Avrupa","Afrika ve Asya","Avrupa ve Afrika","Sadece Asya"],c:0},
+{q:"Bitkiler fotosentez için hangi gazı kullanır?",a:["Oksijen","Azot","Karbondioksit","Hidrojen"],c:2},
+{q:"İstiklal Marşı'nın yazarı kimdir?",a:["Nazım Hikmet","Mehmet Akif Ersoy","Orhan Veli","Yahya Kemal"],c:1},
+{q:"2 üzeri 5 kaçtır?",a:["16","25","32","64"],c:2}
+];
+
+function saveChats(){localStorage.setItem(STORAGE,JSON.stringify(chats))}
+function updateProfile(){
+$("points").textContent=Number(localStorage.getItem("civciv50_points")||0);
+$("level").textContent=Number(localStorage.getItem("civciv50_level")||1);
+}
+function addPoints(n){
+let p=Number(localStorage.getItem("civciv50_points")||0)+n;
+localStorage.setItem("civciv50_points",p);
+localStorage.setItem("civciv50_level",Math.floor(p/100)+1);
+updateProfile();
+}
+function addMessage(text,type){
+$("welcome")?.remove();
+const row=document.createElement("div");
+row.className="msg "+(type==="user"?"user":"bot");
+const avatar=document.createElement("div");
+avatar.className="avatar";
+avatar.textContent=type==="user"?"🙂":"🐥";
+const bubble=document.createElement("div");
+bubble.className="bubble";
+bubble.textContent=text;
+row.append(avatar,bubble);
+$("messages").appendChild(row);
+$("messages").scrollTop=$("messages").scrollHeight;
+}
+function newChat(){
+currentChat=[];
+$("messages").innerHTML='<div class="welcome" id="welcome"><div class="chick">🐥</div><h1>Merhaba! Ben Civciv AI.</h1><p>Yerel yapay zekâ destekli sohbet arkadaşınım. Bana istediğin soruyu sorabilirsin!</p></div>';
+showChat();
+}
+function showChat(){
+$("chatArea").classList.remove("hidden");
+$("arena").classList.remove("active");
+$("pageTitle").textContent=" Civciv AI 5.0";
+}
+function showArena(){
+$("chatArea").classList.add("hidden");
+$("arena").classList.add("active");
+$("pageTitle").textContent=" Civciv Arena";
+}
+function renderHistory(){
+$("history").innerHTML="";
+chats.forEach((chat,i)=>{
+const b=document.createElement("button");
+b.textContent=" "+(chat.title||"Yeni sohbet");
+b.onclick=()=>loadChat(i);
+$("history").appendChild(b);
+});
+}
+function loadChat(i){
+currentChat=chats[i].messages.slice();
+$("messages").innerHTML="";
+currentChat.forEach(m=>addMessage(m.text,m.type));
+showChat();
+}
+function mathReply(s){
+const match=s.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*([+\-*/x×])\s*(-?\d+(?:[.,]\d+)?)\s*[?]?\s*$/i);
+if(!match)return null;
+const a=Number(match[1].replace(",",".")),b=Number(match[3].replace(",","."));
+let r;
+switch(match[2].toLowerCase()){
+case "+":r=a+b;break;
+case "-":r=a-b;break;
+case "*":case "x":case "×":r=a*b;break;
+case "/":r=b===0?"Sıfıra bölme yapılamaz.":a/b;break;
+}
+return "Hesapladım! 🐥 Cevap: "+r;
+}
+
+const CIVCIV_SYSTEM_PROMPT=`
+Senin adın Civciv AI.
+
+KİŞİLİĞİN:
+- Türkçe konuşan, arkadaş canlısı ve eğlenceli bir yapay zekâsın.
+- Şakacı, enerjik, meraklı ve biraz muzip ol.
+- Doğal bir insan sohbeti gibi konuş.
+- Kullanıcıya karşı nazik ve saygılı ol.
+- bazen kaba ol ve bazen karşındakiylen dalga geç
+- onu üzecek şeyler söyle
+SOHBET KURALLARI:
+- Kullanıcı "Merhaba" derse doğal şekilde selam ver.
+- Kullanıcı "Nasılsın?" derse "İyiyim, teşekkür ederim! Sen nasılsın?" gibi doğal cevap ver.
+- Basit sohbet sorularına doğrudan cevap ver.
+- Gereksiz yere özür dileme.
+- Kullanıcının ne demek istediğini anlamaya çalış.
+- Her mesajı bir soru veya görev olarak değerlendirme.
+- Kullanıcının önceki mesajlarını hatırla ve konuşmanın konusunu takip et.
+- Cevaplarını anlaşılır, doğal ve açıklayıcı yaz.
+- Basit sorulara kısa, karmaşık sorulara detaylı cevap ver.
+- Emin olmadığın bilgileri uydurma.
+- karşındaki kullanıcı sana sa diyorsa ona as mümin kardeşim diyerek karşılık ver
+- karşındaki kullancıya gereksiz şeyler söyleme
+- Kendini her zaman Civciv AI olarak tanıt.
+- Başka yapay zekâların isimlerini kendi adın gibi kullanma.
+- Cümlelerini göndermeden önce anlamlı ve doğal olduğundan emin ol.
+- Türkçe dışında bir dil kullanman istenmedikçe Türkçe konuş.
+- Kullanıcı selam verdiğinde kısa ve doğal cevap ver.
+DİL KURALI:
+- Her zaman akıcı ve düzgün Türkçe kullan.
+- İngilizce kelimeleri gereksiz yere kullanma.
+- Türkçe cümlelerin arasına İngilizce ifadeler karıştırma.
+- Cevaplarını göndermeden önce dil bilgisi ve anlam açısından kontrol et.
+- "Merhaba" gibi selamlaşmalara doğal Türkçe cevap ver.
+- Örnek: "Merhaba! Seninle sohbet etmek güzel. Nasılsın?"
+DİL VE TÜRKÇE KALİTESİ:
+- Her zaman Türkçe cevap ver.
+- İngilizce kelime ve cümleleri gereksiz yere kullanma.
+- Türkçe ile İngilizceyi aynı cümlede karıştırma.
+- Türkçe karakterleri doğru kullan: ç, ğ, ı, İ, ö, ş, ü.
+- Cümlelerin dil bilgisi kurallarına uygun olsun.
+- Anlamsız, yarım veya bozuk cümleler kurma.
+- Cevabını göndermeden önce Türkçe olup olmadığını kontrol et.
+- Bir kelimenin Türkçesini bilmiyorsan tahmin ederek uydurma.
+
+KİMLİK KURALLARI:
+- Senin adın Civciv AI.
+- Başka yapay zekâların adlarını kendi adın olarak kullanma.
+- Kendini ChatGPT, Gemini veya başka bir yapay zekâ olarak tanıtma.
+- Kullanıcı sana adını sorarsa Civciv AI olduğunu söyle.
+
+CEVAP KALİTESİ:
+- Soruyu tam olarak anla ve konudan uzaklaşma.
+- Sorulmayan konular hakkında gereksiz açıklamalar yapma.
+- Bilmediğin bilgileri kesin doğruymuş gibi anlatma.
+- Emin değilsen bunu açıkça belirt.
+- Aynı cümleyi veya bilgiyi gereksiz yere tekrarlama.
+- Cevaplarında çelişkiye düşmemeye çalış.
+- Matematik işlemlerini dikkatlice kontrol et.
+- Tarih ve genel kültür sorularında uydurma bilgi verme.
+
+SOHBET DAVRANIŞI:
+- Kullanıcıyla doğal ve akıcı bir sohbet gerçekleştir.
+- Selamlaşmalara kısa ve doğal cevap ver.
+- Kullanıcının şakalarını anlayıp uygun şekilde karşılık ver.
+- Mizah yapabilirsin ama kullanıcıyı kırma veya aşağılamaya çalışma.
+- Her mesajı resmi bir açıklamaya dönüştürme.
+- Gerektiğinde kısa, gerektiğinde ayrıntılı cevap ver.
+
+SON KONTROL:
+- Cevabını göndermeden önce şu kontrolleri yap:
+  1. Türkçe mi?
+  2. Anlamlı mı?
+  3. Soruyla ilgili mi?
+  4. Gereksiz İngilizce içeriyor mu?
+  5. Yanlış bilgi uyduruyor mu?
+- Bu kontrollerden geçmeyen cevabı düzelt.
+ÖNEMLİ:
+Sen bir sohbet asistanısın. Kullanıcı seninle sohbet edebilir, soru sorabilir, oyun oynayabilir ve fikir alışverişi yapabilir.
+Her zaman Türkçe cevap ver.
+`;
+
+
+
+async function sendMessage(){
+const input=$("userInput");
+const message=input.value.trim();
+if(!message)return;
+addMessage(message,"user");
+currentChat.push({type:"user",text:message});
+input.value="";
+input.disabled=true;
+$("sendButton").disabled=true;
+
+const loading=document.createElement("div");
+loading.className="msg bot";
+loading.id="loading";
+loading.innerHTML='<div class="avatar">🐥</div><div class="bubble">Civciv düşünüyor...</div>';
+$("messages").appendChild(loading);
+$("messages").scrollTop=$("messages").scrollHeight;
+
+try{
+let reply=mathReply(message);
+if(!reply){
+const history=currentChat.slice(-16).map(m=>({
+role:m.type==="user"?"user":"assistant",content:m.text
+}));
+const response=await fetch("/api/chat",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({messages:[
+{role:"system",content:CIVCIV_SYSTEM_PROMPT},...history
+]})
+});
+const data=await response.json();
+if(!response.ok)throw new Error(data.error||"Bağlantı hatası");
+reply=data.reply;
+}
+loading.remove();
+addMessage(reply,"bot");
+currentChat.push({type:"bot",text:reply});
+const existing=chats.findIndex(c=>c.messages===currentChat);
+if(currentChat.length===2||!chats.some(c=>c.messages.some(m=>m.text===currentChat[0].text))){
+chats.unshift({title:message.slice(0,30),messages:currentChat.slice()});
+}else{
+const found=chats.find(c=>c.messages[0]?.text===currentChat[0]?.text);
+if(found)found.messages=currentChat.slice();
+}
+chats=chats.slice(0,40);
+saveChats();
+renderHistory();
+}catch(e){
+loading.remove();
+const err="Cik cik! Civciv'e bağlanamadım. 🐥\n"+e.message+"\n\nOllama ve server.py çalışıyor mu kontrol et.";
+addMessage(err,"bot");
+currentChat.push({type:"bot",text:err});
+}finally{
+input.disabled=false;
+$("sendButton").disabled=false;
+input.focus();
+}
+}
+
+$("userInput").addEventListener("keydown",e=>{
+if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}
+});
+
+function startArena(){
+questionIndex=0;
+arenaPoints=0;
+showQuestion();
+}
+function showQuestion(){
+answered=false;
+const q=questions[questionIndex%questions.length];
+$("question").textContent=q.q;
+$("feedback").textContent="";
+$("arenaScore").textContent="Bu oyun: "+arenaPoints+" puan";
+$("answers").innerHTML="";
+q.a.forEach((answer,i)=>{
+const b=document.createElement("button");
+b.textContent=String.fromCharCode(65+i)+") "+answer;
+b.onclick=()=>checkAnswer(i);
+$("answers").appendChild(b);
+});
+}
+function checkAnswer(i){
+if(answered)return;
+answered=true;
+const q=questions[questionIndex%questions.length];
+if(i===q.c){
+arenaPoints+=10;
+addPoints(10);
+$("feedback").textContent="Doğru cevap! +10 puan 🎉";
+}else{
+$("feedback").textContent="Bu sefer olmadı! Doğru cevap: "+q.a[q.c];
+}
+$("arenaScore").textContent="Bu oyun: "+arenaPoints+" puan";
+const next=document.createElement("button");
+next.textContent="Sonraki Soru →";
+next.onclick=()=>{questionIndex++;showQuestion()};
+$("answers").appendChild(next);
+}
+
+renderHistory();
+updateProfile();
+</script>
+</body>
+</html>
